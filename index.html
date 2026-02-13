@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비효소식 CGM 확증임상 준비 마인드맵</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        #header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 5px solid #0056b3;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+        }
+
+        p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .node circle {
+            fill: #fff;
+            stroke-width: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .node text {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 1.5px;
+            transition: all 0.5s;
+        }
+
+        .node--internal circle {
+            fill: #555;
+        }
+
+        .node--internal text {
+            text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+        }
+
+        /* 툴팁 스타일 */
+        div.tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+            background: #333;
+            color: #fff;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: #0056b3;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            background: #004494;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <h1>비효소식 CGM 확증임상 준비 체크리스트</h1>
+        <p>나노다공성 백금 기반 센서 내부 점검용</p>
+    </div>
+
+    <div id="controls">
+        <button onclick="expandAll()">모두 펼치기</button>
+        <button onclick="collapseAll()">모두 접기</button>
+    </div>
+
+    <div id="tree-container"></div>
+
+    <script>
+        // 데이터 구조 (JSON)
+        const treeData = {
+            "name": "확증임상 준비",
+            "type": "root",
+            "children": [
+                {
+                    "name": "1. 시스템 동결 (Freeze)",
+                    "type": "category",
+                    "children": [
+                        {
+                            "name": "센서 양산 준비",
+                            "children": [
+                                { "name": "레시피 확정 (전극/mPt/외부막)" },
+                                { "name": "물량: 250기 + 여유분 20~30%" },
+                                { "name": "삽입기: 무통증/무오류 검증" }
+                            ]
+                        },
+                        {
+                            "name": "펌웨어 & 알고리즘",
+                            "children": [
+                                { "name": "알고리즘 정책 락(Lock) (보정/무보정)" },
+                                { "name": "15일 구동 배터리 안정성" },
+                                { "name": "연결 안정성 확보" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "2. 임상 사이트 셋업",
+                    "type": "category",
+                    "children": [
+                        {
+                            "name": "행정 절차 (고대구로)",
+                            "children": [
+                                { "name": "IRB 서류 최신화 (Protocol/IB)" },
+                                { "name": "예산 확정 및 위탁계약" },
+                                { "name": "IRB 승인 목표 (접수 후 1~3개월)" }
+                            ]
+                        },
+                        {
+                            "name": "현장 인프라",
+                            "children": [
+                                { "name": "인력: 책임연구자(PI) & CRC 배치" },
+                                { "name": "장비: 표준장비(YSI) 확보" },
+                                { "name": "시설: 검체 보관소 확인" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "3. 피험자 운영 프로세스",
+                    "type": "category",
+                    "children": [
+                        {
+                            "name": "교육 키트 제작",
+                            "children": [
+                                { "name": "Easy Guide (리플릿)" },
+                                { "name": "트러블슈팅 카드 (비상연락망)" },
+                                { "name": "관리 키트 (알코올솜/테이프)" }
+                            ]
+                        },
+                        {
+                            "name": "초기 세팅 (In-clinic)",
+                            "children": [
+                                { "name": "첫 부착 및 워밍업(1~2h) 확인" },
+                                { "name": "시간 동기화 (폰 vs YSI)" }
+                            ]
+                        },
+                        {
+                            "name": "재택 관리 (Home-wear)",
+                            "children": [
+                                { "name": "앱 백그라운드 설정 (배터리 최적화 해제)" },
+                                { "name": "로그북 교육 (특이사항/오류 기록)" },
+                                { "name": "생활수칙 (사우나/과격한 운동 제한)" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "4. 데이터 & 리스크 관리",
+                    "type": "category",
+                    "children": [
+                        {
+                            "name": "서버 시스템",
+                            "children": [
+                                { "name": "125명 실시간 수용 서버 구축" },
+                                { "name": "데이터 유실 모니터링/알림" },
+                                { "name": "보안 및 백업 체계" }
+                            ]
+                        },
+                        {
+                            "name": "리스크 대응",
+                            "children": [
+                                { "name": "피부 이상반응 보고 절차" },
+                                { "name": "이상치(Outlier) 소명 근거 마련" },
+                                { "name": "24시간 핫라인(당직) 운영안" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "5. 일정 및 R&R",
+                    "type": "category",
+                    "children": [
+                        {
+                            "name": "일정 현실화 (Gap 분석)",
+                            "children": [
+                                { "name": "IRB 승인 기간 고려 (4월 승인 예상)" },
+                                { "name": "종료 시점 수정 (5월 -> 8~9월)" },
+                                { "name": "다기관(병원 추가) 검토 필요" }
+                            ]
+                        },
+                        {
+                            "name": "Action Items",
+                            "children": [
+                                { "name": "예비 물량(Spare) 생산 계획" },
+                                { "name": "비효소식 특화 CRC 교육자료" },
+                                { "name": "현장/기술팀 당직 스케줄" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // 설정
+        const margin = {top: 20, right: 90, bottom: 30, left: 90},
+              width = window.innerWidth - margin.left - margin.right,
+              height = window.innerHeight - margin.top - margin.bottom;
+
+        const svg = d3.select("#tree-container").append("svg")
+            .attr("width", width + margin.right + margin.left)
+            .attr("height", height + margin.top + margin.bottom)
+            .call(d3.zoom().on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            }))
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + height / 2 + ")"); // 시작 위치 중앙
+
+        const g = svg.append("g");
+
+        let i = 0,
+            duration = 750,
+            root;
+
+        // 트리 레이아웃 설정 (가로 방향)
+        const tree = d3.tree().size([height, width]);
+
+        root = d3.hierarchy(treeData, function(d) { return d.children; });
+        root.x0 = height / 2;
+        root.y0 = 0;
+
+        // 초기 상태: 루트의 첫 번째 자식들만 펼치고 나머지는 접음
+        if(root.children) {
+            root.children.forEach(collapse);
+            // 첫 번째 레벨은 펼쳐두기
+            root.children.forEach(d => {
+                if(d.children) {
+                    d.children.forEach(collapse);
+                    d._children = d.children;
+                    d.children = null;
+                }
+            });
+        }
+        
+        update(root);
+
+        // 노드 접기 함수
+        function collapse(d) {
+            if(d.children) {
+                d._children = d.children;
+                d._children.forEach(collapse);
+                d.children = null;
+            }
+        }
+        
+        // 노드 펼치기 함수 (재귀)
+        function expand(d) {
+            if(d._children) {
+                d.children = d._children;
+                d._children = null;
+                d.children.forEach(expand);
+            }
+        }
+
+        // 전체 펼치기 버튼 기능
+        window.expandAll = function() {
+            expand(root);
+            update(root);
+        }
+
+        // 전체 접기 버튼 기능
+        window.collapseAll = function() {
+            if(root.children) {
+                root.children.forEach(collapse);
+            }
+            update(root);
+        }
+
+        function update(source) {
+            const treeData = tree(root);
+
+            // 노드 데이터 바인딩
+            const nodes = treeData.descendants(),
+                  links = treeData.links();
+
+            // 깊이(Depth)에 따른 y 좌표 설정 (가로 간격 조절)
+            nodes.forEach(function(d) { d.y = d.depth * 250; });
+
+            // --- 노드 처리 ---
+            const node = g.selectAll('g.node')
+                .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+            // 새 노드 생성
+            const nodeEnter = node.enter().append('g')
+                .attr('class', 'node')
+                .attr("transform", function(d) {
+                    return "translate(" + source.y0 + "," + source.x0 + ")";
+                })
+                .on('click', click);
+
+            // 노드 원(Circle) 추가
+            nodeEnter.append('circle')
+                .attr('class', 'node')
+                .attr('r', 1e-6)
+                .style("fill", function(d) {
+                    // 색상 코딩
+                    if (d.depth === 0) return "#dc3545"; // Root: Red
+                    if (d.depth === 1) return "#0056b3"; // Category: Blue
+                    if (d.depth === 2) return "#17a2b8"; // Sub-category: Teal
+                    return "#28a745"; // Leaf: Green
+                })
+                .style("stroke", "#fff");
+
+            // 노드 텍스트 추가
+            nodeEnter.append('text')
+                .attr("dy", ".35em")
+                .attr("x", function(d) {
+                    return d.children || d._children ? -13 : 13;
+                })
+                .attr("text-anchor", function(d) {
+                    return d.children || d._children ? "end" : "start";
+                })
+                .text(function(d) { return d.data.name; })
+                .style("fill-opacity", 1e-6)
+                .style("font-weight", d => d.depth === 0 ? "bold" : "normal")
+                .style("font-size", d => (16 - d.depth) + "px");
+
+            // 노드 업데이트 (위치 이동)
+            const nodeUpdate = node.merge(nodeEnter).transition()
+                .duration(duration)
+                .attr("transform", function(d) { 
+                    return "translate(" + d.y + "," + d.x + ")";
+                });
+
+            // 원 크기 및 색상 업데이트
+            nodeUpdate.select('circle.node')
+                .attr('r', 8)
+                .style("fill", function(d) {
+                    // 접혀있으면( _children이 있으면) 색상을 채우고, 펼쳐져 있으면 흰색(Stroke로 구분)
+                    const color = d.depth === 0 ? "#dc3545" : (d.depth === 1 ? "#0056b3" : (d.depth === 2 ? "#17a2b8" : "#28a745"));
+                    return d._children ? color : "#fff";
+                })
+                .style("stroke", function(d) {
+                    return d.depth === 0 ? "#dc3545" : (d.depth === 1 ? "#0056b3" : (d.depth === 2 ? "#17a2b8" : "#28a745"));
+                });
+
+            nodeUpdate.select('text')
+                .style("fill-opacity", 1);
+
+            // 노드 제거
+            const nodeExit = node.exit().transition()
+                .duration(duration)
+                .attr("transform", function(d) {
+                    return "translate(" + source.y + "," + source.x + ")";
+                })
+                .remove();
+
+            nodeExit.select('circle')
+                .attr('r', 1e-6);
+
+            nodeExit.select('text')
+                .style("fill-opacity", 1e-6);
+
+            // --- 링크(선) 처리 ---
+            const link = g.selectAll('path.link')
+                .data(links, function(d) { return d.target.id; });
+
+            // 새 링크 생성 (부드러운 곡선)
+            const linkEnter = link.enter().insert('path', "g")
+                .attr("class", "link")
+                .attr('d', function(d){
+                    const o = {x: source.x0, y: source.y0}
+                    return diagonal(o, o)
+                });
+
+            // 링크 업데이트
+            const linkUpdate = link.merge(linkEnter).transition()
+                .duration(duration)
+                .attr('d', function(d){ 
+                    // [수정됨] d는 link 객체이므로 d.source와 d.target을 사용해야 합니다.
+                    return diagonal(d.source, d.target) 
+                });
+
+            // 링크 제거
+            const linkExit = link.exit().transition()
+                .duration(duration)
+                .attr('d', function(d) {
+                    const o = {x: source.x, y: source.y}
+                    return diagonal(o, o)
+                })
+                .remove();
+
+            // 각 노드의 현재 위치를 저장 (애니메이션 용)
+            nodes.forEach(function(d){
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+
+            // 곡선 그리는 함수
+            function diagonal(s, d) {
+                return `M ${s.y} ${s.x}
+                        C ${(s.y + d.y) / 2} ${s.x},
+                          ${(s.y + d.y) / 2} ${d.x},
+                          ${d.y} ${d.x}`;
+            }
+        }
+
+        // 클릭 이벤트 핸들러
+        function click(event, d) {
+            if (d.children) {
+                d._children = d.children;
+                d.children = null;
+            } else {
+                d.children = d._children;
+                d._children = null;
+            }
+            update(d);
+        }
+
+        // 리사이즈 이벤트
+        window.addEventListener('resize', () => {
+             const width = window.innerWidth - margin.left - margin.right;
+             const height = window.innerHeight - margin.top - margin.bottom;
+             svg.attr("width", width + margin.right + margin.left)
+                .attr("height", height + margin.top + margin.bottom);
+             update(root);
+        });
+
+    </script>
+</body>
+</html>
